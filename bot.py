@@ -1,3 +1,4 @@
+import json
 import os
 import random
 import time
@@ -8,6 +9,8 @@ import chess.svg
 game = chess.Board()
 INFINITY = 100000
 SHOW_SVG = True
+
+
 def handle_user():
     user_move = input(">You:")
     try:
@@ -26,6 +29,16 @@ def get_difference(color=chess.BLACK):
     return get_current_score(chess.WHITE) - get_current_score(chess.BLACK)
 
 
+def position_score(score, color):
+    with open('filePositionAdvantages.json', 'r') as f:
+        json_file = json.loads(f.read())
+    for square in game.pieces(chess.KNIGHT, color):
+        number = chess.square_file(square)
+        letter = chess.square_rank(square)+1
+        if color == chess.WHITE:
+            score += int(json_file["KnightWhite"][str(number)])
+        else:
+            score += int(json_file["KnightBlack"][str(number)])
 
 def get_current_score(color=chess.BLACK):
     score = 0
@@ -38,6 +51,7 @@ def get_current_score(color=chess.BLACK):
         score += INFINITY
     elif game.outcome() != None and game.outcome().winner != color:
         score -= INFINITY
+    position_score(score, color)
     return score
 
 
@@ -46,7 +60,7 @@ def show_board_svg():
     with open('temp.svg', 'w') as outputfile:
         outputfile.write(boardsvg)
     time.sleep(0.1)
-    if SHOW_SVG:os.startfile('temp.svg')
+    if SHOW_SVG: os.startfile('temp.svg')
 
 
 def handle_bot():
