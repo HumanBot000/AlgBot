@@ -28,17 +28,35 @@ def get_difference(color=chess.BLACK):
         return get_current_score(chess.BLACK) - get_current_score(chess.WHITE)
     return get_current_score(chess.WHITE) - get_current_score(chess.BLACK)
 
-
 def position_score(score, color):
     with open('filePositionAdvantages.json', 'r') as f:
-        json_file = json.loads(f.read())
+        json_file_files = json.loads(f.read())
+    with open('rankPositionAdvantages.json', 'r') as f:
+        json_file_ranks = json.loads(f.read())
     for square in game.pieces(chess.KNIGHT, color):
-        number = chess.square_file(square)
+        number = chess.square_rank(square)+1
+        letter = chess.square_file(square)+1
+        if color == chess.WHITE:
+            score += int(json_file_files["KnightWhite"][str(number)])
+        else:
+            score += int(json_file_files["KnightBlack"][str(number)])
+        score += int(json_file_ranks["Knight"][str(letter)])
+    for square in game.pieces(chess.PAWN, color):
+        number = chess.square_file(square)+1
         letter = chess.square_rank(square)+1
         if color == chess.WHITE:
-            score += int(json_file["KnightWhite"][str(number)])
+            score += int(json_file_files["PawnWhite"][str(number)])
         else:
-            score += int(json_file["KnightBlack"][str(number)])
+            score += int(json_file_files["PawnBlack"][str(number)])
+    for square in game.pieces(chess.BISHOP, color):
+        number = chess.square_file(square)+1
+        letter = chess.square_rank(square)+1
+        if color == chess.WHITE:
+            score += int(json_file_files["BishopWhite"][str(number)])
+        else:
+            score += int(json_file_files["BishopBlack"][str(number)])
+        score += int(json_file_ranks["Bishop"][str(letter)])
+    return score
 
 def get_current_score(color=chess.BLACK):
     score = 0
@@ -51,7 +69,7 @@ def get_current_score(color=chess.BLACK):
         score += INFINITY
     elif game.outcome() != None and game.outcome().winner != color:
         score -= INFINITY
-    position_score(score, color)
+    score = position_score(score, color)
     return score
 
 
