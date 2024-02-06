@@ -9,7 +9,7 @@ import chess.svg
 game = chess.Board()
 INFINITY = 100000
 SHOW_SVG = True
-
+BOT_PLAYS_AS = chess.BLACK
 
 def handle_user():
     user_move = input(">You:")
@@ -81,7 +81,11 @@ def show_board_svg():
     if SHOW_SVG: os.startfile('temp.svg')
 
 
-def handle_bot():
+def handle_bot(my_color):
+    if my_color == chess.WHITE:
+        opponent_color = chess.BLACK
+    else:
+        opponent_color = chess.WHITE
     my_best_move_rating = -1000
     my_best_move = None
     for my_move in game.legal_moves:
@@ -90,13 +94,13 @@ def handle_bot():
         opponent_best_move = None
         for opponent_move in game.legal_moves:
             game.push(opponent_move)
-            if get_difference(chess.WHITE) > opponent_best_move_rating:
-                opponent_best_move_rating = get_difference(chess.WHITE)
+            if get_difference(opponent_color) > opponent_best_move_rating:
+                opponent_best_move_rating = get_difference(opponent_color)
                 opponent_best_move = opponent_move
             game.pop()
         game.push(opponent_best_move)
-        if get_difference(chess.BLACK) > my_best_move_rating:
-            my_best_move_rating = get_difference(chess.BLACK)
+        if get_difference(my_color) > my_best_move_rating:
+            my_best_move_rating = get_difference(my_color)
             my_best_move = my_move
         game.pop()
         game.pop()
@@ -108,8 +112,17 @@ def handle_bot():
 while not game.is_game_over():
     show_board_svg()
     print(game)
-    handle_user()
-    if game.is_game_over():
-        break
-    show_board_svg()
-    handle_bot()
+    if BOT_PLAYS_AS == chess.BLACK:
+        handle_user()
+        if game.is_game_over():
+            break
+        show_board_svg()
+        handle_bot(BOT_PLAYS_AS)
+    else:
+        handle_bot(BOT_PLAYS_AS)
+        show_board_svg()
+        if game.is_game_over():
+            break
+        handle_user()
+
+
