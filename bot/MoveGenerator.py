@@ -2,6 +2,7 @@ import json
 import os
 import random
 import time
+from pathlib import Path
 
 import chess
 import chess.svg
@@ -15,9 +16,9 @@ def get_difference(game,color):
 
 
 def position_score(score, color,game):
-    with open('filePositionAdvantages.json', 'r') as f:
+    with open(Path('config/filePositionAdvantages.json'), 'r') as f:
         json_file_files = json.loads(f.read())
-    with open('rankPositionAdvantages.json', 'r') as f:
+    with open(Path('config/rankPositionAdvantages.json'), 'r') as f:
         json_file_ranks = json.loads(f.read())
     for square in game.pieces(chess.KNIGHT, color):
         number = chess.square_rank(square) + 1
@@ -104,11 +105,11 @@ def handle_bot(my_color,game):
         opponent_color = chess.BLACK
     else:
         opponent_color = chess.WHITE
-    my_best_move_rating = -1000
+    my_best_move_rating = -10000000
     my_best_moves = []
     for my_move in game.legal_moves:
         game.push(my_move)
-        opponent_best_move_rating = -1000
+        opponent_best_move_rating = -100000000000
         opponent_best_move = None
         for opponent_move in game.legal_moves:
             game.push(opponent_move)
@@ -126,8 +127,6 @@ def handle_bot(my_color,game):
         game.pop()
     my_best_move = random.choice(my_best_moves)
     game.push(my_best_move)
-    print(f">Bot: {my_best_move}")
-    print(f"{my_best_moves}:{my_best_move_rating}")
     return my_best_move
 def generate_move(fen,color):
     game = chess.Board(fen)
