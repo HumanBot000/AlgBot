@@ -8,7 +8,7 @@ import chess
 import chess.svg
 
 
-INFINITY = 100000
+INFINITY = 10000000
 def get_difference(game,color):
     if color == chess.BLACK:
         return get_current_score(game,chess.BLACK) - get_current_score(game,chess.WHITE)
@@ -105,11 +105,11 @@ def handle_bot(my_color,game):
         opponent_color = chess.BLACK
     else:
         opponent_color = chess.WHITE
-    my_best_move_rating = -10000000
+    my_best_move_rating = -INFINITY
     my_best_moves = []
     for my_move in game.legal_moves:
         game.push(my_move)
-        opponent_best_move_rating = -100000000000
+        opponent_best_move_rating = -INFINITY
         opponent_best_move = None
         for opponent_move in game.legal_moves:
             game.push(opponent_move)
