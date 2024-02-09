@@ -17,32 +17,32 @@ def get_difference(game,color):
 
 def position_score(score, color,game):
     with open(Path('config/filePositionAdvantages.json'), 'r') as f:
-        json_file_files = json.loads(f.read())
+        json_files = json.loads(f.read())
     with open(Path('config/rankPositionAdvantages.json'), 'r') as f:
-        json_file_ranks = json.loads(f.read())
+        json_ranks = json.loads(f.read())
     for square in game.pieces(chess.KNIGHT, color):
         number = chess.square_rank(square) + 1
         letter = chess.square_file(square) + 1
         if color == chess.WHITE:
-            score += int(json_file_files["KnightWhite"][str(number)])
+            score += int(json_files["KnightWhite"][str(letter)])
         else:
-            score += int(json_file_files["KnightBlack"][str(number)])
-        score += int(json_file_ranks["Knight"][str(letter)])
+            score += int(json_files["KnightBlack"][str(letter)])
+        score += int(json_ranks["Knight"][str(number)])
     for square in game.pieces(chess.PAWN, color):
         number = chess.square_rank(square) + 1
         letter = chess.square_file(square) + 1
         if color == chess.WHITE:
-            score += int(json_file_files["PawnWhite"][str(number)])
+            score += int(json_files["PawnWhite"][str(letter)])
         else:
-            score += int(json_file_files["PawnBlack"][str(number)])
+            score += int(json_files["PawnBlack"][str(letter)])
     for square in game.pieces(chess.BISHOP, color):
         number = chess.square_rank(square) + 1
         letter = chess.square_file(square) + 1
         if color == chess.WHITE:
-            score += int(json_file_files["BishopWhite"][str(number)])
+            score += int(json_files["BishopWhite"][str(letter)])
         else:
-            score += int(json_file_files["BishopBlack"][str(number)])
-        score += int(json_file_ranks["Bishop"][str(letter)])
+            score += int(json_files["BishopBlack"][str(letter)])
+        score += int(json_ranks["Bishop"][str(number)])
     return score
 
 
@@ -108,6 +108,7 @@ def handle_bot(my_color,game):
     my_best_move_rating = -INFINITY
     my_best_moves = []
     for my_move in game.legal_moves:
+        print(f"Checking {my_move}")
         game.push(my_move)
         opponent_best_move_rating = -INFINITY
         opponent_best_move = None
@@ -125,6 +126,7 @@ def handle_bot(my_color,game):
             my_best_moves.append(my_move)
         game.pop()
         game.pop()
+    print(f"Best Moves: {my_best_moves} with rating {my_best_move_rating}")
     my_best_move = random.choice(my_best_moves)
     game.push(my_best_move)
     return my_best_move
