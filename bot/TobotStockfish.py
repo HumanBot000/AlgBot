@@ -11,7 +11,7 @@ engines_directory = os.path.join(current_directory, '..', 'engines')
 stockfish_path = os.path.join(engines_directory, 'stockfish/stockfish-windows-x86-64-avx2.exe')
 stockfish = Stockfish(path=stockfish_path)
 
-elo = 3000
+elo = 100
 
 while True:
     stockfish.set_elo_rating(elo)
@@ -30,25 +30,18 @@ while True:
         node = node.add_variation(chess.Move.from_uci(move))
         if game.is_game_over():
             break
+        # Bot's turn
         move = mg.generate_move(game.fen(), chess.WHITE)
         game.push(move)
         node = node.add_variation(move)
-        """move = mg.generate_move(game.fen(), chess.WHITE)
-        game.push(move)
-        print(f">ToBot: {move}")
-        print(game)
-        stockfish.set_fen_position(game.fen())
-        move = stockfish.get_best_move()
-        game.push(chess.Move.from_uci(move))
-        print(f"Stockfish: {move}")
-        print(game)
-        print(stockfish.get_wdl_stats())"""
-    if not game.outcome().result() == "0-1":
-        game_pgn.headers["Result"] = "Stockfish"
-        print(f"Won with:{elo}")
-        break
-    else:
+    if game.outcome().winner == chess.WHITE:
         game_pgn.headers["Result"] = "ToBot"
+        print(f"Won with:{elo}")
+    elif game.outcome().winner == None:
+        game_pgn.headers["Result"] = "Draw"
+        print(f"Draw with:{elo}")
+    else:
+        game_pgn.headers["Result"] = "Stockfish"
         print(f"Lost with:{elo}")
-        elo -= 250
+        elo -= 100
     print(game_pgn)
