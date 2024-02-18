@@ -3,12 +3,12 @@ import os
 import random
 import time
 from pathlib import Path
-
+import chess.polyglot
 import chess
 import chess.svg
 
 INFINITY = 10000000
-
+USE_OPENING_BIN = True
 
 def get_difference(game, color):
     if color == chess.BLACK:
@@ -53,28 +53,19 @@ def check_passing_pawn(game, score, color=chess.BLACK):
     for my_piece_position in game.pieces(chess.PAWN, color):
         file = chess.square_file(my_piece_position)
         rank = chess.square_rank(my_piece_position)
-        if not file == 0 or not file == 7:
+        if file not in [0, 7]:
             files = [file - 1, file, file + 1]
         elif file == 0:
             files = [file, file + 1]
         elif file == 7:
             files = [file - 1, file]
         for scanning_file in files:
-            if color == chess.WHITE:
-                for scanning_rank in range(rank, 8):
-                    #print(["A", "B", "C", "D", "E", "F", "G", "H"][scanning_file], scanning_rank)
-                    if game.piece_at(chess.square(scanning_file, scanning_rank)) is not None and game.piece_at(
-                            chess.square(scanning_file, scanning_rank)).piece_type == chess.PAWN and game.piece_at(
-                        chess.square(scanning_file, scanning_rank)).color == get_opposite_color(color):
-                        return score
-            else:
-                for scanning_rank in range(rank, 0, -1):
-                    if game.piece_at(chess.square(scanning_file, scanning_rank)) is not None and game.piece_at(
-                            chess.square(scanning_file, scanning_rank)).piece_type == chess.PAWN and game.piece_at(
-                        chess.square(scanning_file, scanning_rank)).color == get_opposite_color(color):
-                        return score
-    print("PASSING PAWN")
-    return score + 2.4
+            for scanning_rank in range(rank, 8) if color == chess.WHITE else range(rank, 0, -1):
+                if game.piece_at(chess.square(scanning_file, scanning_rank)) is not None and game.piece_at(
+                        chess.square(scanning_file, scanning_rank)).piece_type == chess.PAWN and game.piece_at(
+                    chess.square(scanning_file, scanning_rank)).color == get_opposite_color(color):
+                    return score
+    return score + 1
 
 
 def get_opposite_color(color):
@@ -114,21 +105,45 @@ def handle_bot(my_color, game):
     else:
         opponent_color = chess.WHITE
     my_best_move_rating = -INFINITY
-    for _ in game.legal_moves:
-        __ = _
+    for move_temp in game.legal_moves:
+        first_possible_move = move_temp
         break
-    my_best_moves = [__]
-    del __
+    my_best_moves = [first_possible_move]
+    del first_possible_move
+    """
+    File = A, B, C, D, E, F, G, H
+    Rank = 1, 2, 3, 4, 5, 6, 7, 8
+            Mein Gedächtnisdialog:
+            0. Das Ausgagngsboard wird ab jetzt als B0 bezeichnet
+            1. Mein bester Move wird auf den erst möglichen gesetzt. Falls alle schlechter sind als dieser, wird dieser am Ende gespielt.
+            1.5 Es wird durch jeden möglichen move geloopt (M1)
+            2. Der Move wird ausgeführt (M1)
+            3. Das beste rating des gegners wird auf -INF  gesetzt.
+            4. Es wird der erste Move des Gegners als bester Move gesetzt. Falls alle schlechter sind als dieser, wird dieser am Ende gespielt.
+            5. Es wird durch jeden möglichen Move des gegners geloopt.(M2)
+            6. Der Move wird ausgeführt (M2)
+            6.5 Es wird eine Bewertung des Spielfeldes berechnet. Diese besteht aus dem Score des Gegners - dem Score des Bots.
+            7. Wenn die aktuelle Bewertung des gegners besser ist, als die Bewertung bei seinem jetzigen besten Spielzug, wird dieser als neuer  bestOpponentMove gesetzt.
+            8. Der letzte zug des gegners wird zurück genommen. (M2)
+            9. Für die weitere Berechnung des besten Zuges des Bots, wird nun angenommen das der Gegner bestOpponentMove spielt. Deshalb wird das auf dem aktuellen Spielfeld gespeichert.
+            |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+            |10. Jetzt wird berechnet, wie gut der Aktuelle Zug (M1) ist, wenn einberechnet wird, dass der Gegner bestOpponentMove spielt. Dafür wird wieder der selbe Score berechnet. (Nur halt umgedreht).|
+            |    Wenn der Zug M1 jetzt eine bessere bewertung hat als der jetzige beste Move des Bots, wird dieser als neuer bester Zug markiert.                                                            |
+            |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|  
+            12. Sowohl der bestOpponentMove als auch M1 werden zurück gesetzt, damit B0 für den nächsten Loopvorgang wieder vorhanden ist.
+            13. Der beste Move des Bots wird returnt.
+    """
+    with chess.polyglot.open_reader("openings/Ranomi 1.4.bin") as reader:
+        for entry in reader.find_all(game):
+            print(entry)
+            return entry.move
     for my_move in game.legal_moves:
-        # print(f"Checking {my_move}")
         game.push(my_move)
         opponent_best_move_rating = -INFINITY
-        ___ = None
-        for _ in game.legal_moves:
-            ___ = _
+        for move_temp in game.legal_moves:
+            first_possible_move = move_temp
             break
-        opponent_best_move = ___
-        del ___
+        opponent_best_move = first_possible_move
         for opponent_move in game.legal_moves:
             game.push(opponent_move)
             if get_difference(game, opponent_color) > opponent_best_move_rating:
@@ -143,9 +158,7 @@ def handle_bot(my_color, game):
             my_best_moves.append(my_move)
         game.pop()
         game.pop()
-    # print(f"Best Moves: {my_best_moves} with rating {my_best_move_rating}")
     my_best_move = random.choice(my_best_moves)
-    game.push(my_best_move)
     return my_best_move
 
 
