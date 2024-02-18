@@ -5,7 +5,6 @@ from stockfish import Stockfish
 
 import MoveGenerator as mg
 
-
 current_directory = os.path.dirname(__file__)
 engines_directory = os.path.join(current_directory, '..', 'engines')
 stockfish_path = os.path.join(engines_directory, 'stockfish/stockfish-windows-x86-64-avx2.exe')
