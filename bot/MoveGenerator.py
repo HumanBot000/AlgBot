@@ -204,9 +204,14 @@ def handle_bot(my_color, game):
             12. Sowohl der bestOpponentMove als auch M1 werden zurück gesetzt, damit B0 für den nächsten Loopvorgang wieder vorhanden ist.
             13. Der beste Move des Bots wird returnt.
     """
-    with chess.polyglot.open_reader("openings/Ranomi 1.4.bin") as reader:
-        for entry in reader.find_all(game):
-            return entry.move
+    if USE_OPENING_BIN:
+        with chess.polyglot.open_reader("openings/Ranomi 1.4.bin") as reader:
+            possibles = []
+            for number,entry in enumerate(reader.find_all(game)):
+                possibles.append(entry.move)
+                if number > 5:
+                    break
+            return random.choice(possibles)
     for my_move in game.legal_moves:
         game.push(my_move)
         opponent_best_move_rating = -INFINITY
