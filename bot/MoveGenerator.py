@@ -9,6 +9,15 @@ import chess.svg
 
 INFINITY = 10000000
 USE_OPENING_BIN = False
+PIECE_VALUES = {
+    chess.PAWN: 1,
+    chess.KNIGHT: 3,
+    chess.BISHOP: 3,
+    chess.ROOK: 5,
+    chess.QUEEN: 9,
+}
+TAKE_DRAW_WHEN_LOOSING_THRESHOLD = 3
+
 
 def get_difference(game, color):
     if color == chess.BLACK:
@@ -47,6 +56,44 @@ def position_score(score, color, game):
     return score
 
 
+def check_fork(game: chess.Board, score, color: chess.Color = chess.BLACK):
+    best_score_rising = -INFINITY
+    for pawn in game.pieces(chess.PAWN, color):  # todo En Passant
+        if chess.square_file(pawn) in [0, 7]:
+            return score
+        else:
+            checking_squares = [chess.square(chess.square_rank(pawn) - 1,
+                                             chess.square_rank(pawn) + 1 if color == chess.WHITE else chess.square_rank(
+                                                 pawn) - 1), chess.square(chess.square_rank(pawn) + 1,
+                                                                          chess.square_rank(
+                                                                              pawn) + 1 if color == chess.WHITE else chess.square_rank(
+                                                                              pawn) - 1), ]
+        for checking_square in checking_squares:
+            if game.piece_at(checking_square) is not None and game.piece_at(
+                    checking_square).color == get_opposite_color(color) and not chess.Move(pawn,
+                                                                                           checking_square) in game.legal_moves:  # Checks if a pawn attacks a piece
+                game.push(chess.Move(pawn, checking_square))
+                if len(game.attackers(get_opposite_color(color), checking_square)) == 0:
+                    game.pop()
+                else:  # When a pawn doesn't attack two pieces, it's not a fork
+                    game.pop()
+                    return score
+            else:
+                return score
+        # Here it's a Fork (Both Forked pieces aren't defended)
+        # Check if it makes sense to capture (Both pieces have higher values than the pawn)
+        lowest_valuable_piece = (INFINITY, game.piece_at(checking_squares[0]))
+        for checking_square in checking_squares:
+            if PIECE_VALUES[game.piece_at(checking_square).piece_type] < lowest_valuable_piece[0]:
+                lowest_valuable_piece = (
+                    PIECE_VALUES[game.piece_at(checking_square).piece_type], game.piece_at(checking_square).piece_type)
+        if lowest_valuable_piece[0] >= PIECE_VALUES[chess.PAWN]:
+            best_score_rising = PIECE_VALUES[lowest_valuable_piece[1]] - PIECE_VALUES[chess.PAWN]
+    print(game.fen())
+    print("Fork By Pawn")
+    return score + best_score_rising
+
+
 def check_passing_pawn(game, score, color=chess.BLACK):
     if len(game.pieces(chess.PAWN, color)) == 0:
         return score
@@ -65,7 +112,7 @@ def check_passing_pawn(game, score, color=chess.BLACK):
                         chess.square(scanning_file, scanning_rank)).piece_type == chess.PAWN and game.piece_at(
                     chess.square(scanning_file, scanning_rank)).color == get_opposite_color(color):
                     return score
-    return score + 1
+    return score + 0.9
 
 
 def get_opposite_color(color):
@@ -75,19 +122,24 @@ def get_opposite_color(color):
         return chess.WHITE
 
 
-def get_current_score(game, color=chess.BLACK):
+def get_current_score(game, color=chess.BLACK,x=False):
     score = 0
     score += len(game.pieces(chess.PAWN, color)) * 1
     score += len(game.pieces(chess.BISHOP, color)) * 3
     score += len(game.pieces(chess.KNIGHT, color)) * 3
     score += len(game.pieces(chess.ROOK, color)) * 5
     score += len(game.pieces(chess.QUEEN, color)) * 9
-    if game.outcome() != None and game.outcome().winner == color:
-        score += INFINITY
-    elif game.outcome() != None and game.outcome().winner == get_opposite_color(color):
-        score -= INFINITY
     score = position_score(score, color, game)
     score = check_passing_pawn(game, score, color)
+    score = check_fork(game, score, color)
+    if game.outcome() is not None and game.outcome().winner == color:
+        score += INFINITY
+    elif game.outcome() is not None and game.outcome().winner == get_opposite_color(color):
+        score -= INFINITY
+    elif game.outcome() is not None and x == True and game.outcome().result() == "1/2-1/2" and score + TAKE_DRAW_WHEN_LOOSING_THRESHOLD < get_current_score(game,
+                                                                                                        get_opposite_color(
+                                                                                                                color),x=True):  # Check if it makes sense to draw
+        score += INFINITY
     return score
 
 
@@ -135,15 +187,17 @@ def handle_bot(my_color, game):
     """
     with chess.polyglot.open_reader("openings/Ranomi 1.4.bin") as reader:
         for entry in reader.find_all(game):
-            print(entry)
             return entry.move
     for my_move in game.legal_moves:
         game.push(my_move)
         opponent_best_move_rating = -INFINITY
+        first_possible_move = None
         for move_temp in game.legal_moves:
             first_possible_move = move_temp
             break
         opponent_best_move = first_possible_move
+        if first_possible_move is None:  # My Move leads to checkmate
+            return my_move
         for opponent_move in game.legal_moves:
             game.push(opponent_move)
             if get_difference(game, opponent_color) > opponent_best_move_rating:
