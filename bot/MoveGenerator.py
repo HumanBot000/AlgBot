@@ -24,8 +24,29 @@ def get_difference(game, color):
         return get_current_score(game, chess.BLACK) - get_current_score(game, chess.WHITE)
     return get_current_score(game, chess.WHITE) - get_current_score(game, chess.BLACK)
 
-
+def piece_table_score(score,color,game):
+    if color == chess.WHITE:
+        with open(Path('config/Piece-Square Tables/white.json'), 'r') as f:
+            table = json.loads(f.read())
+    else:
+        with open(Path('config/Piece-Square Tables/black.json'), 'r') as f:
+            table = json.loads(f.read())
+    for Pawn in game.pieces(chess.PAWN,color):
+        score += int(table["Pawn"][chess.square_rank(Pawn)][chess.square_file(Pawn)]) / 100
+    for Knight in game.pieces(chess.KNIGHT,color):
+        score += int(table["Knight"][chess.square_rank(Knight)][chess.square_file(Knight)]) / 100
+    for Bishop in game.pieces(chess.BISHOP,color):
+        score += int(table["Bishop"][chess.square_rank(Bishop)][chess.square_file(Bishop)]) / 100
+    for Rook in game.pieces(chess.ROOK,color):
+        score += int(table["Rook"][chess.square_rank(Rook)][chess.square_file(Rook)]) / 100
+    for Queen in game.pieces(chess.QUEEN,color):
+        score += int(table["Queen"][chess.square_rank(Queen)][chess.square_file(Queen)]) / 100
+    for King in game.pieces(chess.KING,color):
+        score += int(table["King"][chess.square_rank(King)][chess.square_file(King)]) / 100
+    return score
 def position_score(score, color, game):
+    return piece_table_score(score,color,game)
+    """This Function is deprecated and uses official tables now"""
     with open(Path('config/filePositionAdvantages.json'), 'r') as f:
         json_files = json.loads(f.read())
     with open(Path('config/rankPositionAdvantages.json'), 'r') as f:
@@ -89,12 +110,10 @@ def check_fork(game: chess.Board, score, color: chess.Color = chess.BLACK):
                     PIECE_VALUES[game.piece_at(checking_square).piece_type], game.piece_at(checking_square).piece_type)
         if lowest_valuable_piece[0] >= PIECE_VALUES[chess.PAWN]:
             best_score_rising = PIECE_VALUES[lowest_valuable_piece[1]] - PIECE_VALUES[chess.PAWN]
-    print(game.fen())
-    print("Fork By Pawn")
     return score + best_score_rising
 
 
-def check_passing_pawn(game, score, color=chess.BLACK):
+def check_passing_pawn(game, score, color=chess.BLACK):#todo double pawn check
     if len(game.pieces(chess.PAWN, color)) == 0:
         return score
     for my_piece_position in game.pieces(chess.PAWN, color):
@@ -112,7 +131,7 @@ def check_passing_pawn(game, score, color=chess.BLACK):
                         chess.square(scanning_file, scanning_rank)).piece_type == chess.PAWN and game.piece_at(
                     chess.square(scanning_file, scanning_rank)).color == get_opposite_color(color):
                     return score
-    return score + 0.9
+    return score + 0.5
 
 
 def get_opposite_color(color):
@@ -143,7 +162,7 @@ def get_current_score(game, color=chess.BLACK,x=False):
     return score
 
 
-def show_board_svg(game, SHOW_SVG=False):
+def show_board_svg(game, SHOW_SVG=True):
     boardsvg = chess.svg.board(game, size=600, coordinates=True)
     with open('temp.svg', 'w') as outputfile:
         outputfile.write(boardsvg)
