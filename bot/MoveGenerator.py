@@ -8,7 +8,7 @@ import chess
 import chess.svg
 
 INFINITY = 10000000
-USE_OPENING_BIN = True
+USE_OPENING_BIN = False
 
 def get_difference(game, color):
     if color == chess.BLACK:
