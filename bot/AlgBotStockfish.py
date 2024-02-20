@@ -36,6 +36,7 @@ while True:
     if game.outcome().winner == chess.WHITE:
         game_pgn.headers["Result"] = "ToBot"
         print(f"Won with:{elo}")
+        break
     elif game.outcome().winner == None:
         game_pgn.headers["Result"] = "Draw"
         print(f"Draw with:{elo}")

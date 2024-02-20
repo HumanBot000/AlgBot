@@ -113,24 +113,22 @@ def check_fork(game: chess.Board, score, color: chess.Color = chess.BLACK):
     return score + best_score_rising
 
 
-def check_passing_pawn(game, score, color=chess.BLACK):#todo double pawn check
+def check_passing_pawn(game, score,my_piece_position,color=chess.BLACK):#todo double pawn check
     if len(game.pieces(chess.PAWN, color)) == 0:
         return score
-    for my_piece_position in game.pieces(chess.PAWN, color):
-        file = chess.square_file(my_piece_position)
-        rank = chess.square_rank(my_piece_position)
-        if file not in [0, 7]:
-            files = [file - 1, file, file + 1]
-        elif file == 0:
-            files = [file, file + 1]
-        elif file == 7:
-            files = [file - 1, file]
-        for scanning_file in files:
-            for scanning_rank in range(rank, 8) if color == chess.WHITE else range(rank, 0, -1):
-                if game.piece_at(chess.square(scanning_file, scanning_rank)) is not None and game.piece_at(
-                        chess.square(scanning_file, scanning_rank)).piece_type == chess.PAWN and game.piece_at(
-                    chess.square(scanning_file, scanning_rank)).color == get_opposite_color(color):
-                    return score
+    file = chess.square_file(my_piece_position)
+    rank = chess.square_rank(my_piece_position)
+    if file not in [0, 7]:
+        files = [file - 1, file, file + 1]
+    elif file == 0:
+        files = [file, file + 1]
+    elif file == 7:
+        files = [file - 1, file]
+    for scanning_file in files:
+        for scanning_rank in range(rank+1, 8) if color == chess.WHITE else range(rank-1, 0, -1):
+            if game.piece_at(chess.square(scanning_file, scanning_rank)) is not None and game.piece_at(chess.square(scanning_file, scanning_rank)).piece_type == chess.PAWN and game.piece_at(chess.square(scanning_file, scanning_rank)).color == get_opposite_color(color):
+                return score
+    print("Passing Pawn",game.fen(),chess.square_file(my_piece_position),chess.square_rank(my_piece_position))
     return score + 0.5
 
 
@@ -149,8 +147,9 @@ def get_current_score(game, color=chess.BLACK,x=False):
     score += len(game.pieces(chess.ROOK, color)) * 5
     score += len(game.pieces(chess.QUEEN, color)) * 9
     score = position_score(score, color, game)
-    score = check_passing_pawn(game, score, color)
-    score = check_fork(game, score, color)
+    for my_piece_position in game.pieces(chess.PAWN, color):
+        score = check_passing_pawn(game, score, my_piece_position, color)
+    #score = check_fork(game, score, color)
     if game.outcome() is not None and game.outcome().winner == color:
         score += INFINITY
     elif game.outcome() is not None and game.outcome().winner == get_opposite_color(color):
