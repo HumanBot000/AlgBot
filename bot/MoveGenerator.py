@@ -8,7 +8,7 @@ import chess
 import chess.svg
 
 INFINITY = 10000000
-USE_OPENING_BIN = False
+USE_OPENING_BIN = True
 PIECE_VALUES = {
     chess.PAWN: 1,
     chess.KNIGHT: 3,
@@ -113,7 +113,7 @@ def check_fork(game: chess.Board, score, color: chess.Color = chess.BLACK):
     return score + best_score_rising
 
 
-def check_passing_pawn(game, score, color=chess.BLACK):#todo double pawn check
+def check_passing_pawn(game, score, color=chess.BLACK):
     if len(game.pieces(chess.PAWN, color)) == 0:
         return score
     for my_piece_position in game.pieces(chess.PAWN, color):
@@ -131,6 +131,11 @@ def check_passing_pawn(game, score, color=chess.BLACK):#todo double pawn check
                         chess.square(scanning_file, scanning_rank)).piece_type == chess.PAWN and game.piece_at(
                     chess.square(scanning_file, scanning_rank)).color == get_opposite_color(color):
                     return score
+        for scanning_rank in range(rank+1, 8) if color == chess.WHITE else range(rank-1, 0, -1): #Double pawn
+            if game.piece_at(chess.square(file, scanning_rank)) is not None and game.piece_at(
+                    chess.square(file, scanning_rank)).piece_type == chess.PAWN and game.piece_at(
+                chess.square(file, scanning_rank)).color == get_opposite_color(color):
+                return score
     return score + 0.5
 
 
@@ -211,7 +216,9 @@ def handle_bot(my_color, game):
                 possibles.append(entry.move)
                 if number > 5:
                     break
-            return random.choice(possibles)
+            if len(possibles) > 0:
+                print("Used Opening Book")
+                return random.choice(possibles)
     for my_move in game.legal_moves:
         game.push(my_move)
         opponent_best_move_rating = -INFINITY
