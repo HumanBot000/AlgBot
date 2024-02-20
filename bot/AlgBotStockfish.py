@@ -45,3 +45,4 @@ while True:
         print(f"Lost with:{elo}")
         elo -= 100
     print(game_pgn)
+print(game_pgn)
