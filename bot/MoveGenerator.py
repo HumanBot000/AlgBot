@@ -143,6 +143,8 @@ def check_fork(game: chess.Board, score, color: chess.Color = chess.BLACK):
 
 
 def check_passing_pawn(game, score, color=chess.BLACK):
+    passing_pawn_found = False
+    passing_pawns = 0
     if len(game.pieces(chess.PAWN, color)) == 0:
         return score
     for my_piece_position in game.pieces(chess.PAWN, color):
@@ -159,13 +161,21 @@ def check_passing_pawn(game, score, color=chess.BLACK):
                 if game.piece_at(chess.square(scanning_file, scanning_rank)) is not None and game.piece_at(
                         chess.square(scanning_file, scanning_rank)).piece_type == chess.PAWN and game.piece_at(
                     chess.square(scanning_file, scanning_rank)).color == get_opposite_color(color):
-                    return score
-        for scanning_rank in range(rank + 1, 8) if color == chess.WHITE else range(rank - 1, 0, -1):  # Double pawn
-            if game.piece_at(chess.square(file, scanning_rank)) is not None and game.piece_at(
-                    chess.square(file, scanning_rank)).piece_type == chess.PAWN and game.piece_at(
-                chess.square(file, scanning_rank)).color == get_opposite_color(color):
-                return score
-    return score + 0.5
+                    passing_pawn_found = False
+                else:
+                    passing_pawn_found = True
+        if passing_pawn_found:
+            for scanning_rank in range(rank + 1, 8) if color == chess.WHITE else range(rank - 1, 0, -1):
+                if game.piece_at(chess.square(file, scanning_rank)) is not None and game.piece_at(
+                        chess.square(file, scanning_rank)).piece_type == chess.PAWN and game.piece_at(
+                    chess.square(file, scanning_rank)).color == get_opposite_color(color):
+                    passing_pawn_found = False
+            else:
+                passing_pawns += 1
+    if passing_pawn_found:
+        return score
+    return score * (0.5*passing_pawns)
+
 
 
 def get_opposite_color(color):
@@ -184,7 +194,7 @@ def get_current_score(game, color=chess.BLACK, x=False):
     score += len(game.pieces(chess.QUEEN, color)) * 9
     score = position_score(score, color, game)
     score = check_passing_pawn(game, score, color)
-    score = check_fork(game, score, color)
+    #score = check_fork(game, score, color)
     if game.outcome() is not None and game.outcome().winner == color:
         score += INFINITY
     elif game.outcome() is not None and game.outcome().winner == get_opposite_color(color):
