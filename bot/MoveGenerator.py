@@ -77,40 +77,6 @@ def position_score(score, color, game):
     return score
 
 
-def check_fork(game: chess.Board, score, color: chess.Color = chess.BLACK):
-    best_score_rising = -INFINITY
-    for pawn in game.pieces(chess.PAWN, color):  # todo En Passant
-        if chess.square_file(pawn) in [0, 7]:
-            return score
-        else:
-            checking_squares = [chess.square(chess.square_rank(pawn) - 1,
-                                             chess.square_rank(pawn) + 1 if color == chess.WHITE else chess.square_rank(
-                                                 pawn) - 1), chess.square(chess.square_rank(pawn) + 1,
-                                                                          chess.square_rank(
-                                                                              pawn) + 1 if color == chess.WHITE else chess.square_rank(
-                                                                              pawn) - 1), ]
-        for checking_square in checking_squares:
-            if game.piece_at(checking_square) is not None and game.piece_at(
-                    checking_square).color == get_opposite_color(color) and not chess.Move(pawn,
-                                                                                           checking_square) in game.legal_moves:  # Checks if a pawn attacks a piece
-                game.push(chess.Move(pawn, checking_square))
-                if len(game.attackers(get_opposite_color(color), checking_square)) == 0:
-                    game.pop()
-                else:  # When a pawn doesn't attack two pieces, it's not a fork
-                    game.pop()
-                    return score
-            else:
-                return score
-        # Here it's a Fork (Both Forked pieces aren't defended)
-        # Check if it makes sense to capture (Both pieces have higher values than the pawn)
-        lowest_valuable_piece = (INFINITY, game.piece_at(checking_squares[0]))
-        for checking_square in checking_squares:
-            if PIECE_VALUES[game.piece_at(checking_square).piece_type] < lowest_valuable_piece[0]:
-                lowest_valuable_piece = (
-                    PIECE_VALUES[game.piece_at(checking_square).piece_type], game.piece_at(checking_square).piece_type)
-        if lowest_valuable_piece[0] >= PIECE_VALUES[chess.PAWN]:
-            best_score_rising = PIECE_VALUES[lowest_valuable_piece[1]] - PIECE_VALUES[chess.PAWN]
-    return score + best_score_rising
 
 
 def check_passing_pawn(game, score,my_piece_position,color=chess.BLACK):#todo double pawn check
@@ -170,68 +136,65 @@ def show_board_svg(game, SHOW_SVG=True):
 
 
 def handle_bot(my_color, game):
-    if my_color == chess.WHITE:
-        opponent_color = chess.BLACK
-    else:
-        opponent_color = chess.WHITE
-    my_best_move_rating = -INFINITY
+    """
+       File = A, B, C, D, E, F, G, H
+       Rank = 1, 2, 3, 4, 5, 6, 7, 8
+               Mein Gedächtnisdialog:
+               0. Das Ausgagngsboard wird ab jetzt als B0 bezeichnet
+               1. Mein bester Move wird auf den erst möglichen gesetzt. Falls alle schlechter sind als dieser, wird dieser am Ende gespielt.
+               1.5 Es wird durch jeden möglichen move geloopt (M1)
+               2. Der Move wird ausgeführt (M1)
+               3. Das beste rating des gegners wird auf -INF  gesetzt.
+               4. Es wird der erste Move des Gegners als bester Move gesetzt. Falls alle schlechter sind als dieser, wird dieser am Ende gespielt.
+               5. Es wird durch jeden möglichen Move des gegners geloopt.(M2)
+               6. Der Move wird ausgeführt (M2)
+               6.5 Es wird eine Bewertung des Spielfeldes berechnet. Diese besteht aus dem Score des Gegners - dem Score des Bots.
+               7. Wenn die aktuelle Bewertung des gegners besser ist, als die Bewertung bei seinem jetzigen besten Spielzug, wird dieser als neuer  bestOpponentMove gesetzt.
+               8. Der letzte zug des gegners wird zurück genommen. (M2)
+               9. Für die weitere Berechnung des besten Zuges des Bots, wird nun angenommen das der Gegner bestOpponentMove spielt. Deshalb wird das auf dem aktuellen Spielfeld gespeichert.
+               |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+               |10. Jetzt wird berechnet, wie gut der Aktuelle Zug (M1) ist, wenn einberechnet wird, dass der Gegner bestOpponentMove spielt. Dafür wird wieder der selbe Score berechnet. (Nur halt umgedreht).|
+               |    Wenn der Zug M1 jetzt eine bessere bewertung hat als der jetzige beste Move des Bots, wird dieser als neuer bester Zug markiert.                                                            |
+               |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+               12. Sowohl der bestOpponentMove als auch M1 werden zurück gesetzt, damit B0 für den nächsten Loopvorgang wieder vorhanden ist.
+               13. Der beste Move des Bots wird returnt.
+       """
     for move_temp in game.legal_moves:
         first_possible_move = move_temp
         break
-    my_best_moves = [first_possible_move]
-    del first_possible_move
-    """
-    File = A, B, C, D, E, F, G, H
-    Rank = 1, 2, 3, 4, 5, 6, 7, 8
-            Mein Gedächtnisdialog:
-            0. Das Ausgagngsboard wird ab jetzt als B0 bezeichnet
-            1. Mein bester Move wird auf den erst möglichen gesetzt. Falls alle schlechter sind als dieser, wird dieser am Ende gespielt.
-            1.5 Es wird durch jeden möglichen move geloopt (M1)
-            2. Der Move wird ausgeführt (M1)
-            3. Das beste rating des gegners wird auf -INF  gesetzt.
-            4. Es wird der erste Move des Gegners als bester Move gesetzt. Falls alle schlechter sind als dieser, wird dieser am Ende gespielt.
-            5. Es wird durch jeden möglichen Move des gegners geloopt.(M2)
-            6. Der Move wird ausgeführt (M2)
-            6.5 Es wird eine Bewertung des Spielfeldes berechnet. Diese besteht aus dem Score des Gegners - dem Score des Bots.
-            7. Wenn die aktuelle Bewertung des gegners besser ist, als die Bewertung bei seinem jetzigen besten Spielzug, wird dieser als neuer  bestOpponentMove gesetzt.
-            8. Der letzte zug des gegners wird zurück genommen. (M2)
-            9. Für die weitere Berechnung des besten Zuges des Bots, wird nun angenommen das der Gegner bestOpponentMove spielt. Deshalb wird das auf dem aktuellen Spielfeld gespeichert.
-            |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-            |10. Jetzt wird berechnet, wie gut der Aktuelle Zug (M1) ist, wenn einberechnet wird, dass der Gegner bestOpponentMove spielt. Dafür wird wieder der selbe Score berechnet. (Nur halt umgedreht).|
-            |    Wenn der Zug M1 jetzt eine bessere bewertung hat als der jetzige beste Move des Bots, wird dieser als neuer bester Zug markiert.                                                            |
-            |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|  
-            12. Sowohl der bestOpponentMove als auch M1 werden zurück gesetzt, damit B0 für den nächsten Loopvorgang wieder vorhanden ist.
-            13. Der beste Move des Bots wird returnt.
-    """
     with chess.polyglot.open_reader("openings/Ranomi 1.4.bin") as reader:
         for entry in reader.find_all(game):
             return entry.move
+    best_moves = {"O1R": -INFINITY, "O1M": first_possible_move, "M1M": first_possible_move, "M1R": -INFINITY}#M=Move,R=Rating, M=My, O=Opponent
     for my_move in game.legal_moves:
         game.push(my_move)
-        opponent_best_move_rating = -INFINITY
         first_possible_move = None
         for move_temp in game.legal_moves:
             first_possible_move = move_temp
             break
-        opponent_best_move = first_possible_move
         if first_possible_move is None:  # My Move leads to checkmate
             return my_move
         for opponent_move in game.legal_moves:
             game.push(opponent_move)
-            if get_difference(game, opponent_color) > opponent_best_move_rating:
-                opponent_best_move_rating = get_difference(game, opponent_color)
-                opponent_best_move = opponent_move
+            for move_temp in game.legal_moves:
+                first_possible_move = move_temp
+                break
+            if first_possible_move is None:  # Checkmate
+                game.pop()
+                best_moves["O1R"] = INFINITY
+                best_moves["O1M"] = opponent_move
+            else:
+                if get_difference(game, get_opposite_color(my_color)) > best_moves["O1R"]:
+                    best_moves["O1R"] = get_difference(game, get_opposite_color(my_color))
+                    best_moves["O1M"] = opponent_move
             game.pop()
-        game.push(opponent_best_move)
-        if get_difference(game, my_color) > my_best_move_rating:
-            my_best_move_rating = get_difference(game, my_color)
-            my_best_moves = [my_move]
-        elif get_difference(game, my_color) == my_best_move_rating:
-            my_best_moves.append(my_move)
+        game.push(best_moves["O1M"])
+        if get_difference(game, my_color) > best_moves["M1R"]:
+            best_moves["M1R"] = get_difference(game, my_color)
+            best_moves["M1M"] = my_move
         game.pop()
         game.pop()
-    my_best_move = random.choice(my_best_moves)
-    return my_best_move
+    return best_moves["M1M"]
 
 
 def generate_move(fen, color):
