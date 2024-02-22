@@ -26,6 +26,7 @@ def handle_user():
 
 
 while not game.is_game_over():
+    print(mg.get_difference(game, BOT_PLAYS_AS))
     mg.show_board_svg(game)
     print(game)
     if BOT_PLAYS_AS == chess.BLACK:
