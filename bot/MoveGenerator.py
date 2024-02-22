@@ -93,7 +93,7 @@ def check_passing_pawn(game, score,my_piece_position,color=chess.BLACK):#todo do
             if game.piece_at(chess.square(scanning_file, scanning_rank)) is not None and game.piece_at(chess.square(scanning_file, scanning_rank)).piece_type == chess.PAWN and game.piece_at(chess.square(scanning_file, scanning_rank)).color == get_opposite_color(color):
                 return score
     print("Passing Pawn",game.fen(),chess.square_file(my_piece_position),chess.square_rank(my_piece_position))
-    return score + 30
+    return score + 0
 
 
 def get_opposite_color(color):
